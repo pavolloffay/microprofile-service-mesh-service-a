@@ -20,6 +20,8 @@
  *******************************************************************************/
 package org.eclipse.microprofile.servicemesh.servicea;
 
+import io.opentracing.Tracer;
+import io.smallrye.opentracing.SmallRyeClientTracingFeature;
 import java.net.URL;
 
 import javax.enterprise.context.Dependent;
@@ -52,21 +54,24 @@ public class ServiceBClientImpl {
 
     private int tries;
 
+    @Inject
+    private Tracer tracer;
+
     @Retry(maxRetries = 2)
     @Fallback(fallbackMethod = "fallback")
-    ServiceData call(TracerHeaders ts) throws Exception {
+    ServiceData call() throws Exception {
         ++tries;
 
         String urlString = getURL();
         URL url = new URL(urlString);
 
         ServiceBClient serviceBClient = RestClientBuilder.newBuilder()
-                                             .baseUrl(url)
-                                             .build(ServiceBClient.class);
+            .baseUrl(url)
+            .register(new SmallRyeClientTracingFeature(tracer))
+            .build(ServiceBClient.class);
 
 
-        ServiceData serviceBData = serviceBClient.call(ts.user,ts.xreq,ts.xtraceid,ts.xspanid,ts.xparentspanid,
-                                                       ts.xsampled,ts.xflags,ts.xotspan);
+        ServiceData serviceBData = serviceBClient.call();
 
         serviceBData.setTries(getTries());
 
@@ -74,7 +79,7 @@ public class ServiceBClientImpl {
     }
 
     @SuppressWarnings("unused")
-    public ServiceData fallback(TracerHeaders _ts) {
+    public ServiceData fallback() {
 
         ServiceData data = new ServiceData();
         data.setSource(this.toString());

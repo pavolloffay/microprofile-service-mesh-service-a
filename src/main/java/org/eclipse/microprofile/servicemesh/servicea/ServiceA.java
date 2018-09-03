@@ -47,11 +47,11 @@ public class ServiceA {
     Counter callCounter;
 
     @Counted(name="callCounter", monotonic=true)
-    public ServiceData call(TracerHeaders ts) throws Exception {
+    public ServiceData call() throws Exception {
 
         long callCount = callCounter.getCount();
 
-        ServiceData serviceBData = serviceBClient.call(ts);
+        ServiceData serviceBData = serviceBClient.call();
 
         ServiceData data = new ServiceData();
         data.setSource(this.toString());
